@@ -1,0 +1,211 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}Panel de Administración — NeuroClick{% endblock %}
+{% block nav_admin %}active{% endblock %}
+
+{% block content %}
+<div class="panel-header mb-4" style="border-radius:16px">
+  <div>
+    <h5>⚙ Panel de Administración</h5>
+    <small style="opacity:.85">Visión general del sistema NeuroClick</small>
+  </div>
+  <a href="{% url 'admin_crear_usuario' %}" class="btn btn-sm" style="background:#fff;color:#8b2be2;border-radius:20px;font-weight:700;padding:8px 20px">+ Nuevo Usuario</a>
+</div>
+
+<!-- STATS USUARIOS -->
+<h6 class="fw-800 mb-3" style="color:#8b2be2;font-size:13px;letter-spacing:.5px;text-transform:uppercase">Usuarios del Sistema</h6>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-2">
+    <div class="nc-card p-3 text-center">
+      <div style="font-size:28px;font-weight:900;color:#8b2be2">{{ total_usuarios }}</div>
+      <div style="font-size:12px;color:#888;font-weight:600">Total</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="nc-card p-3 text-center">
+      <div style="font-size:28px;font-weight:900;color:#5b8dee">{{ total_psicologos }}</div>
+      <div style="font-size:12px;color:#888;font-weight:600">Psicólogos</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="nc-card p-3 text-center">
+      <div style="font-size:28px;font-weight:900;color:#f57c00">{{ total_profesores }}</div>
+      <div style="font-size:12px;color:#888;font-weight:600">Profesores</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="nc-card p-3 text-center">
+      <div style="font-size:28px;font-weight:900;color:#e74c3c">{{ total_admins }}</div>
+      <div style="font-size:12px;color:#888;font-weight:600">Admins</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="nc-card p-3 text-center">
+      <div style="font-size:28px;font-weight:900;color:#2ecc71">{{ total_activos }}</div>
+      <div style="font-size:12px;color:#888;font-weight:600">Activos</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="nc-card p-3 text-center">
+      <div style="font-size:28px;font-weight:900;color:#bbb">{{ total_inactivos }}</div>
+      <div style="font-size:12px;color:#888;font-weight:600">Inactivos</div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS CONTENIDO -->
+<h6 class="fw-800 mb-3" style="color:#8b2be2;font-size:13px;letter-spacing:.5px;text-transform:uppercase">Contenido del Sistema</h6>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <a href="{% url 'lista_procesos' %}" class="text-decoration-none">
+      <div class="nc-card p-4 text-center" style="transition:.2s" onmouseover="this.style.boxShadow='0 6px 24px rgba(139,43,226,.15)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:36px;margin-bottom:6px">🧠</div>
+        <div style="font-size:32px;font-weight:900;color:#8b2be2">{{ total_procesos }}</div>
+        <div style="font-size:13px;color:#888;font-weight:600">Procesos Psicológicos</div>
+        <div class="mt-2 d-flex justify-content-center gap-2" style="font-size:11px">
+          <span class="badge-activo">{{ procesos_activos }} activos</span>
+          <span class="badge-encurso">{{ procesos_en_curso }} en curso</span>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-3">
+    <a href="{% url 'lista_libros' %}" class="text-decoration-none">
+      <div class="nc-card p-4 text-center" style="transition:.2s" onmouseover="this.style.boxShadow='0 6px 24px rgba(139,43,226,.15)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:36px;margin-bottom:6px">📚</div>
+        <div style="font-size:32px;font-weight:900;color:#5b8dee">{{ total_libros }}</div>
+        <div style="font-size:13px;color:#888;font-weight:600">Libros en Biblioteca</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-3">
+    <a href="{% url 'lista_foro' %}" class="text-decoration-none">
+      <div class="nc-card p-4 text-center" style="transition:.2s" onmouseover="this.style.boxShadow='0 6px 24px rgba(139,43,226,.15)'" onmouseout="this.style.boxShadow=''">
+        <div style="font-size:36px;margin-bottom:6px">💬</div>
+        <div style="font-size:32px;font-weight:900;color:#e040fb">{{ total_temas }}</div>
+        <div style="font-size:13px;color:#888;font-weight:600">Temas en el Foro</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="nc-card p-4 text-center">
+      <div style="font-size:36px;margin-bottom:6px">📅</div>
+      <div style="font-size:32px;font-weight:900;color:#27ae60">{{ total_citas }}</div>
+      <div style="font-size:13px;color:#888;font-weight:600">Citas Programadas</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- USUARIOS RECIENTES -->
+  <div class="col-md-8">
+    <div class="nc-card">
+      <div class="panel-header" style="border-radius:16px 16px 0 0">
+        <h5 style="font-size:15px">Usuarios Recientes</h5>
+        <a href="{% url 'admin_usuarios' %}" style="color:#fff;font-size:13px;text-decoration:underline">Ver todos</a>
+      </div>
+      <div class="p-0">
+        <table class="table table-hover mb-0" style="font-size:14px">
+          <thead style="background:#f8f0ff">
+            <tr>
+              <th class="px-4 py-3" style="font-weight:700;color:#8b2be2;border:none">Nombre</th>
+              <th class="py-3" style="font-weight:700;color:#8b2be2;border:none">Usuario</th>
+              <th class="py-3" style="font-weight:700;color:#8b2be2;border:none">Rol</th>
+              <th class="py-3" style="font-weight:700;color:#8b2be2;border:none">Estado</th>
+              <th class="py-3 pe-4" style="font-weight:700;color:#8b2be2;border:none">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in usuarios_recientes %}
+            <tr>
+              <td class="px-4 py-3" style="font-weight:700">{{ u.get_full_name|default:u.username }}</td>
+              <td class="py-3" style="color:#888">@{{ u.username }}</td>
+              <td class="py-3">
+                {% if u.perfil.rol == 'psicologo' %}
+                  <span class="role-badge">Psicólogo</span>
+                {% elif u.perfil.rol == 'admin' %}
+                  <span class="role-badge admin">Admin</span>
+                {% else %}
+                  <span class="role-badge prof">Profesor</span>
+                {% endif %}
+              </td>
+              <td class="py-3">
+                {% if u.is_active %}
+                  <span style="color:#2ecc71;font-weight:700;font-size:12px">● Activo</span>
+                {% else %}
+                  <span style="color:#bbb;font-weight:700;font-size:12px">● Inactivo</span>
+                {% endif %}
+              </td>
+              <td class="py-3 pe-4">
+                <a href="{% url 'admin_editar_usuario' u.pk %}" class="btn btn-sm" style="background:#f3e8ff;color:#8b2be2;border-radius:8px;font-size:12px;font-weight:700;padding:4px 10px">Editar</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center py-4 text-muted">No hay usuarios registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCIONES RÁPIDAS -->
+  <div class="col-md-4">
+    <div class="nc-card p-4">
+      <h6 style="font-weight:800;color:#8b2be2;margin-bottom:16px">Acciones Rápidas</h6>
+      <div class="d-flex flex-column gap-2">
+        <a href="{% url 'admin_crear_usuario' %}" class="btn btn-neuro w-100" style="border-radius:12px;text-align:left;padding:12px 16px">
+          👤 Crear Nuevo Usuario
+        </a>
+        <a href="{% url 'admin_usuarios' %}" class="btn btn-outline-neuro w-100" style="border-radius:12px;text-align:left;padding:12px 16px">
+          👥 Gestionar Usuarios
+        </a>
+        <a href="{% url 'lista_procesos' %}" class="btn btn-outline-neuro w-100" style="border-radius:12px;text-align:left;padding:12px 16px">
+          🧠 Ver Procesos
+        </a>
+        <a href="{% url 'crear_proceso' %}" class="btn btn-outline-neuro w-100" style="border-radius:12px;text-align:left;padding:12px 16px">
+          ➕ Crear Proceso
+        </a>
+        <a href="{% url 'lista_libros' %}" class="btn btn-outline-neuro w-100" style="border-radius:12px;text-align:left;padding:12px 16px">
+          📚 Gestionar Biblioteca
+        </a>
+        <a href="{% url 'lista_foro' %}" class="btn btn-outline-neuro w-100" style="border-radius:12px;text-align:left;padding:12px 16px">
+          💬 Moderar Foro
+        </a>
+      </div>
+    </div>
+
+    <!-- PROCESOS RÁPIDO -->
+    <div class="nc-card p-4 mt-3">
+      <h6 style="font-weight:800;color:#8b2be2;margin-bottom:16px">Estado de Procesos</h6>
+      {% if total_procesos > 0 %}
+      <div class="mb-2">
+        <div class="d-flex justify-content-between mb-1" style="font-size:13px;font-weight:600">
+          <span style="color:#2ecc71">Activos</span><span>{{ procesos_activos }}</span>
+        </div>
+        <div class="progress" style="height:8px;border-radius:10px">
+          <div class="progress-bar" style="background:#2ecc71;border-radius:10px;width:{% widthratio procesos_activos total_procesos 100 %}%"></div>
+        </div>
+      </div>
+      <div class="mb-2">
+        <div class="d-flex justify-content-between mb-1" style="font-size:13px;font-weight:600">
+          <span style="color:#5b8dee">En Curso</span><span>{{ procesos_en_curso }}</span>
+        </div>
+        <div class="progress" style="height:8px;border-radius:10px">
+          <div class="progress-bar" style="background:#5b8dee;border-radius:10px;width:{% widthratio procesos_en_curso total_procesos 100 %}%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="d-flex justify-content-between mb-1" style="font-size:13px;font-weight:600">
+          <span style="color:#bbb">Finalizados</span><span>{{ procesos_finalizados }}</span>
+        </div>
+        <div class="progress" style="height:8px;border-radius:10px">
+          <div class="progress-bar" style="background:#bbb;border-radius:10px;width:{% widthratio procesos_finalizados total_procesos 100 %}%"></div>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-muted" style="font-size:13px">No hay procesos registrados aún.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

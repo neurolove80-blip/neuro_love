@@ -1,0 +1,84 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}Gestión de Estudiantes — NeuroClick{% endblock %}
+{% block nav_est %}active{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 style="font-weight:900">Gestión de <span style="background:linear-gradient(135deg,#8b2be2,#e040fb);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Estudiantes</span></h3>
+</div>
+
+<!-- Banner de rol -->
+{% if user.perfil.es_psicologo %}
+  <div class="role-banner rb-psic">🧠 <strong>Psicólogo (Admin)</strong> — Puedes agregar, editar y eliminar procesos.</div>
+{% else %}
+  <div class="role-banner rb-prof">👨‍🏫 <strong>Profesor</strong> — Puedes ver los procesos y dar ajustes razonables.</div>
+{% endif %}
+
+<div class="nc-card">
+  <div class="panel-header">
+    <h5>📋 Procesos de Acompañamiento</h5>
+    {% if es_admin %}
+      <a href="{% url 'crear_proceso' %}" class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-radius:20px;font-weight:700">+ Agregar Nuevo Proceso</a>
+    {% endif %}
+  </div>
+
+  <!-- Buscador -->
+  <div class="p-3 border-bottom">
+    <form method="get" class="d-flex gap-2">
+      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por: Identificación, Nombre, Grado, Tipo de Proceso...">
+      <button type="submit" class="btn btn-neuro px-4">Buscar</button>
+    </form>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr style="background:#fafafa;white-space:nowrap">
+          {% url 'lista_procesos' as base_url %}
+          <th style="padding:14px 20px;font-size:13px;color:#888;font-weight:700;vertical-align:middle"><a href="{{ base_url }}?sort=identificacion&order={% if sort == 'identificacion' and order == 'asc' %}desc{% else %}asc{% endif %}&q={{ q }}" style="text-decoration:none;color:inherit">Identificación {% if sort == 'identificacion' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+          <th style="padding:14px 20px;font-size:13px;color:#888;font-weight:700;vertical-align:middle"><a href="{{ base_url }}?sort=nombre_estudiante&order={% if sort == 'nombre_estudiante' and order == 'asc' %}desc{% else %}asc{% endif %}&q={{ q }}" style="text-decoration:none;color:inherit">Nombre del Estudiante {% if sort == 'nombre_estudiante' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+          <th style="padding:14px 20px;font-size:13px;color:#888;font-weight:700;vertical-align:middle"><a href="{{ base_url }}?sort=grado&order={% if sort == 'grado' and order == 'asc' %}desc{% else %}asc{% endif %}&q={{ q }}" style="text-decoration:none;color:inherit">Grado {% if sort == 'grado' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+          <th style="padding:14px 20px;font-size:13px;color:#888;font-weight:700;vertical-align:middle"><a href="{{ base_url }}?sort=tipo_proceso&order={% if sort == 'tipo_proceso' and order == 'asc' %}desc{% else %}asc{% endif %}&q={{ q }}" style="text-decoration:none;color:inherit">Tipo de Proceso {% if sort == 'tipo_proceso' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+          <th style="padding:14px 20px;font-size:13px;color:#888;font-weight:700;vertical-align:middle"><a href="{{ base_url }}?sort=estado&order={% if sort == 'estado' and order == 'asc' %}desc{% else %}asc{% endif %}&q={{ q }}" style="text-decoration:none;color:inherit">Estado {% if sort == 'estado' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+          <th style="padding:14px 20px;font-size:13px;color:#888;font-weight:700;vertical-align:middle"><a href="{{ base_url }}?sort=fecha_inicio&order={% if sort == 'fecha_inicio' and order == 'asc' %}desc{% else %}asc{% endif %}&q={{ q }}" style="text-decoration:none;color:inherit">Fecha de Inicio {% if sort == 'fecha_inicio' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+          <th style="padding:14px 20px;font-size:13px;color:#888;font-weight:700;vertical-align:middle"><a href="{{ base_url }}?sort=fecha_fin&order={% if sort == 'fecha_fin' and order == 'asc' %}desc{% else %}asc{% endif %}&q={{ q }}" style="text-decoration:none;color:inherit">Fecha de Fin {% if sort == 'fecha_fin' %}{% if order == 'asc' %}▲{% else %}▼{% endif %}{% endif %}</a></th>
+          <th style="padding:14px 20px;font-size:13px;color:#888;font-weight:700;vertical-align:middle">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in procesos %}
+        <tr>
+          <td style="padding:14px 20px"><strong>{{ p.tipo_identificacion }} {{ p.numero_identificacion }}</strong></td>
+          <td style="padding:14px 20px"><strong>{{ p.nombre_estudiante }}</strong></td>
+          <td>{{ p.grado }}</td>
+          <td>{{ p.get_tipo_proceso_display }}</td>
+          <td>
+            {% if p.estado == 'activo' %}<span class="badge-activo">Activo</span>
+            {% elif p.estado == 'en_curso' %}<span class="badge-encurso">En Curso</span>
+            {% else %}<span class="badge-final">Finalizado</span>{% endif %}
+          </td>
+          <td>{{ p.fecha_inicio|date:"d/m/Y" }}</td>
+          <td>{{ p.fecha_fin|date:"d/m/Y"|default:"En curso" }}</td>
+          <td>
+            <div class="d-flex gap-2 flex-wrap">
+              <a href="{% url 'detalle_proceso' p.pk %}" class="btn btn-sm btn-outline-neuro">Ver Detalles</a>
+              {% if es_admin %}
+                <a href="{% url 'detalle_proceso' p.pk %}" class="btn btn-sm" style="background:#e8f5e9;border:1.5px solid #a5d6a7;color:#2e7d32;border-radius:20px;font-weight:700;font-size:12px">📋 Historia</a>
+                <a href="{% url 'editar_proceso' p.pk %}"   class="btn btn-sm" style="background:#e8f0ff;border:1.5px solid #b3c9ff;color:#5b8dee;border-radius:20px;font-weight:700;font-size:12px">✏️</a>
+                <a href="{% url 'eliminar_proceso' p.pk %}" class="btn btn-sm" style="background:#fff0f3;border:1.5px solid #ffb3c1;color:#e74c3c;border-radius:20px;font-weight:700;font-size:12px">🗑️</a>
+              {% endif %}
+              {% if not es_admin %}
+                <a href="{% url 'detalle_proceso' p.pk %}" class="btn btn-sm" style="background:#fff8e1;border:1.5px solid #ffd54f;color:#e65100;border-radius:20px;font-weight:700;font-size:12px">💡 Ajuste Razonable</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center py-4" style="color:#aaa">No se encontraron procesos.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,289 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}Calendario - NeuroClick{% endblock %}
+{% block nav_calendario %}active{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="nc-card">
+      <div class="panel-header">
+        <h5>Calendario de Citas</h5>
+        <a href="{% url 'crear_cita' %}" class="btn btn-sm ms-auto" style="background:#fff;color:#8b2be2;font-weight:700;border-radius:8px;padding:6px 16px;font-size:13px">+ Nueva Cita</a>
+        <div class="d-flex gap-3 align-items-center justify-content-center">
+          <div class="text-center">
+            <div class="d-flex gap-1 mb-1">
+              <a href="?año={% if mes == 1 %}{{ año|add:-1 }}{% else %}{{ año }}{% endif %}&mes={% if mes == 1 %}12{% else %}{{ mes|add:-1 }}{% endif %}" class="btn btn-sm" style="background:#333;color:#fff;padding:2px 8px;border-radius:4px">◀</a>
+              <a href="?año={% if mes == 12 %}{{ año|add:1 }}{% else %}{{ año }}{% endif %}&mes={% if mes == 12 %}1{% else %}{{ mes|add:1 }}{% endif %}" class="btn btn-sm" style="background:#333;color:#fff;padding:2px 8px;border-radius:4px">▶</a>
+            </div>
+            <span style="font-size:9px;color:#fff;font-weight:bold">
+              {% if mes == 1 %}Dic{% elif mes == 2 %}Ene{% elif mes == 3 %}Feb{% elif mes == 4 %}Mar{% elif mes == 5 %}Abr{% elif mes == 6 %}May{% elif mes == 7 %}Jun{% elif mes == 8 %}Jul{% elif mes == 9 %}Ago{% elif mes == 10 %}Sep{% elif mes == 11 %}Oct{% else %}Nov{% endif %} /
+              {% if mes == 12 %}Ene{% elif mes == 1 %}Feb{% elif mes == 2 %}Mar{% elif mes == 3 %}Abr{% elif mes == 4 %}May{% elif mes == 5 %}Jun{% elif mes == 6 %}Jul{% elif mes == 7 %}Ago{% elif mes == 8 %}Sep{% elif mes == 9 %}Oct{% elif mes == 10 %}Nov{% else %}Dic{% endif %}
+            </span>
+          </div>
+          <span class="fw-bold mx-2" style="font-size:15px;min-width:120px;text-align:center;color:#fff">{{ nombre_mes }} {{ año }}</span>
+          <div class="text-center">
+            <div class="d-flex gap-1 mb-1">
+              {% if año > 1950 %}
+              <a href="?año={{ año|add:-1 }}&mes={{ mes }}" class="btn btn-sm" style="background:#333;color:#fff;padding:2px 8px;border-radius:4px">◀</a>
+              {% endif %}
+              {% if año < 2030 %}
+              <a href="?año={{ año|add:1 }}&mes={{ mes }}" class="btn btn-sm" style="background:#333;color:#fff;padding:2px 8px;border-radius:4px">▶</a>
+              {% endif %}
+            </div>
+            <span style="font-size:9px;color:#fff;font-weight:bold">{{ año|add:-1 }} / {% if año < 2030 %}{{ año|add:1 }}{% else %}{{ año }}{% endif %}</span>
+          </div>
+          <a href="?año={{ year }}&mes={{ month }}" class="btn btn-sm ms-2" style="background:#e8f5e9;border:2px solid #a5d6a7;font-size:11px;padding:4px 10px;border-radius:4px">Hoy</a>
+        </div>
+      </div>
+      
+      <div class="p-3">
+        <div class="row text-center g-0 mb-2">
+          <div class="col fw-bold text-muted py-2" style="background:#f8f0ff;border-radius:8px 0 0 8px">Lun</div>
+          <div class="col fw-bold text-muted py-2" style="background:#f8f0ff">Mar</div>
+          <div class="col fw-bold text-muted py-2" style="background:#f8f0ff">Mie</div>
+          <div class="col fw-bold text-muted py-2" style="background:#f8f0ff">Jue</div>
+          <div class="col fw-bold text-muted py-2" style="background:#f8f0ff">Vie</div>
+          <div class="col fw-bold text-muted py-2" style="background:#f8f0ff">Sab</div>
+          <div class="col fw-bold text-muted py-2" style="background:#f8f0ff;border-radius:0 8px 8px 0">Dom</div>
+        </div>
+        
+        {% for semana in dias_mes %}
+        <div class="row g-0 mb-1">
+          {% for dia in semana %}
+          <div class="col position-relative" style="min-height:100px;cursor:{% if dia == 0 %}default{% elif dia in dias_no_habiles or dia in dias_no_habiles_recurrentes %}default{% else %}pointer{% endif %};{% if dia == 0 %}background:#f9f9f9{% elif dia in dias_no_habiles or dia in dias_no_habiles_recurrentes %}background:#ffebee;border:2px solid #ffcdd2{% else %}background:#fff{% endif %}{% if forloop.first %}border-radius:8px 0 0 8px{% endif %}{% if forloop.last %}border-radius:0 8px 8px 0{% endif %}" {% if dia != 0 and dia not in dias_no_habiles and dia not in dias_no_habiles_recurrentes %}onclick="abrirDiaModal({{ dia }}, '{{ año }}-{{ mes|stringformat:'02d' }}-{{ dia|stringformat:'02d' }}')"{% endif %}>
+            {% if dia != 0 %}
+              <span class="position-absolute top-0 start-0 p-1 d-block" style="font-size:11px;font-weight:700;{% if dia in dias_no_habiles or dia in dias_no_habiles_recurrentes %}color:#e53935{% else %}color:#888{% endif %};z-index:10">{{ dia }}</span>
+              {% if dia in dias_no_habiles or dia in dias_no_habiles_recurrentes %}
+                <div class="position-absolute bottom-0 start-0 w-100 p-1 text-center" style="font-size:9px;background:#ffcdd2;color:#c62828;border-radius:0 0 4px 4px">No laborable</div>
+              {% else %}
+                {% with citasdel_dia=citas|dictsort:"fecha_hora" %}
+                {% for cita in citas %}
+                  {% if cita.fecha_hora.day == dia %}
+                  <div class="position-absolute" style="top:{{ forloop.counter0|add:2 }}0px;left:3px;right:3px;z-index:1;pointer-events:none">
+                    <div style="font-size:9px;font-weight:600;background:{{ cita.color }}20;border-left:3px solid {{ cita.color }};color:{{ cita.color }};border-radius:3px;padding:1px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4">
+                      {{ cita.fecha_hora|date:'H:i' }} {{ cita.titulo|truncatechars:14 }}
+                    </div>
+                  </div>
+                  {% endif %}
+                {% endfor %}
+                {% endwith %}
+              {% endif %}
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-lg-4">
+    <div class="nc-card mb-3">
+      <div class="p-3 d-flex align-items-center gap-3" style="border-radius:12px">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        <div class="flex-grow-1">
+          <div class="fw-bold" style="font-size:13px;color:#333">Google Calendar</div>
+          <div style="font-size:11px;color:#888">Sincroniza tus citas</div>
+        </div>
+        <a href="{% url 'google_configuracion' %}" class="btn btn-sm" style="background:#f1f3f4;color:#333;font-size:12px;font-weight:600;border-radius:8px;white-space:nowrap">Configurar</a>
+      </div>
+    </div>
+
+    <div class="nc-card mb-4">
+      <div class="panel-header" style="background:#e53935">
+        <h5>Dias No Laborables</h5>
+      </div>
+      <div class="p-3">
+        <form method="post" class="mb-3">
+          {% csrf_token %}
+          {{ dia_form.as_p }}
+          <button type="submit" name="crear_dia_no_habil" class="btn btn-outline-neuro w-100 mt-2" style="border-color:#e53935;color:#e53935">Agregar</button>
+        </form>
+        <hr>
+        <h6 class="fw-bold mb-2">Dias configurados:</h6>
+        <ul class="list-unstyled mb-0" style="font-size:13px">
+          {% for dia in dias_no_habiles_all %}
+          <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
+            <span>{{ dia.fecha|date:"d/m" }} - {{ dia.motivo }}</span>
+            <a href="{% url 'eliminar_dia_no_habil' dia.pk %}" class="btn btn-sm" style="color:#e53935">X</a>
+          </li>
+          {% empty %}
+          <li class="text-muted">No hay dias.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Dia -->
+<div class="modal fade" id="diaModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;overflow:hidden">
+      <div class="modal-header" style="background:#8b2be2;color:#fff;border:none;padding:18px 24px 14px">
+        <div>
+          <h5 class="modal-title fw-bold mb-0" id="diaModalTitulo"></h5>
+          <small id="diaModalSubtitulo" style="opacity:.75;font-size:12px"></small>
+        </div>
+        <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3" id="diaModalCuerpo" style="max-height:360px;overflow-y:auto"></div>
+      <div class="modal-footer" style="border-top:1px solid #eee;padding:10px 20px">
+        <a id="diaModalNuevaCitaBtn" href="#" class="btn btn-sm ms-auto" style="background:#8b2be2;color:#fff;font-weight:700;font-size:13px;border-radius:8px;padding:6px 16px">+ Nueva Cita</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Cita -->
+<div class="modal fade" id="citaModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px;overflow:hidden">
+      <div class="modal-header" id="citaModalHeader" style="background:#8b2be2;color:#fff;border:none;padding:20px 24px 12px">
+        <h5 class="modal-title fw-bold" id="citaModalTitulo"></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <small class="text-muted fw-bold d-block">Tipo</small>
+            <span id="citaModalTipo" class="fw-bold"></span>
+          </div>
+          <div class="col-6">
+            <small class="text-muted fw-bold d-block">Duración</small>
+            <span id="citaModalDuracion" class="fw-bold"></span>
+          </div>
+          <div class="col-6">
+            <small class="text-muted fw-bold d-block">Fecha</small>
+            <span id="citaModalFecha" class="fw-bold"></span>
+          </div>
+          <div class="col-6">
+            <small class="text-muted fw-bold d-block">Hora</small>
+            <span id="citaModalHora" class="fw-bold"></span>
+          </div>
+          <div class="col-12">
+            <small class="text-muted fw-bold d-block">Estudiante</small>
+            <span id="citaModalEstudiante" class="fw-bold"></span>
+          </div>
+          <div class="col-12">
+            <small class="text-muted fw-bold d-block">Observaciones</small>
+            <p id="citaModalObs" style="color:#555;font-size:14px;line-height:1.6;margin:0"></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid #eee;padding:12px 24px 20px;flex-wrap:wrap;gap:8px">
+        <a id="citaModalEliminarBtn" href="#" class="btn btn-sm" style="background:#fff0f3;border:1.5px solid #ffb3c1;color:#e74c3c;font-weight:700;font-size:12px">
+          Eliminar
+        </a>
+        <div class="ms-auto d-flex gap-2 flex-wrap">
+          <a id="citaModalHistoriaBtn" href="#" class="btn btn-sm" style="background:#e8f5e9;border:1.5px solid #a5d6a7;color:#2e7d32;font-weight:700;font-size:12px;display:none">
+            Historia clínica
+          </a>
+          <a id="citaModalEditarBtn" href="#" class="btn btn-sm" style="background:#8b2be2;color:#fff;font-weight:700;font-size:12px;border:none">
+            Editar cita
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var citasPorDia = {};
+{% for cita in citas %}
+(function(){
+  var d = {{ cita.fecha_hora.day }};
+  if (!citasPorDia[d]) citasPorDia[d] = [];
+  citasPorDia[d].push({
+    id: {{ cita.pk }},
+    titulo: "{{ cita.titulo|escapejs }}",
+    tipo: "{{ cita.tipo_cita|escapejs }}",
+    fecha: "{{ cita.fecha_hora|date:'d/m/Y' }}",
+    hora: "{{ cita.fecha_hora|date:'H:i' }}",
+    estudiante: "{% if cita.estudiante %}{{ cita.estudiante.nombre_estudiante|escapejs }}{% else %}N/A{% endif %}",
+    estudianteId: "{{ cita.estudiante_id|default:'' }}",
+    duracion: {{ cita.duracion }},
+    observaciones: "{{ cita.observaciones|default:'Sin observaciones'|escapejs }}",
+    color: "{{ cita.color|escapejs }}"
+  });
+})();
+{% endfor %}
+
+var MESES = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function abrirDiaModal(dia, fechaStr) {
+  var citas = citasPorDia[dia] || [];
+
+  if (citas.length === 0) {
+    window.location = '/calendario/cita/nueva/?fecha=' + fechaStr;
+    return;
+  }
+
+  var partes = fechaStr.split('-');
+  document.getElementById('diaModalTitulo').textContent = parseInt(partes[2]) + ' de ' + MESES[parseInt(partes[1])] + ' ' + partes[0];
+  document.getElementById('diaModalSubtitulo').textContent = citas.length === 1 ? '1 cita agendada' : citas.length + ' citas agendadas';
+  document.getElementById('diaModalNuevaCitaBtn').href = '/calendario/cita/nueva/?fecha=' + fechaStr;
+
+  var cuerpo = document.getElementById('diaModalCuerpo');
+  cuerpo.innerHTML = '';
+  citas.forEach(function(cita) {
+    var item = document.createElement('div');
+    item.style.cssText = 'cursor:pointer;border-radius:10px;padding:11px 14px;margin-bottom:8px;border-left:4px solid ' + cita.color + ';background:' + cita.color + '12';
+    item.onmouseenter = function(){ this.style.background = cita.color + '28'; };
+    item.onmouseleave = function(){ this.style.background = cita.color + '12'; };
+    var estudiante_html = (cita.estudiante && cita.estudiante !== 'N/A')
+      ? '<div style="font-size:12px;color:#777;margin-top:3px">&#128100; ' + cita.estudiante + '</div>'
+      : '';
+    item.innerHTML =
+      '<div class="d-flex align-items-start gap-2">' +
+        '<div style="min-width:40px;text-align:center;background:' + cita.color + '20;border-radius:6px;padding:4px 6px">' +
+          '<div style="font-size:13px;font-weight:800;color:' + cita.color + ';line-height:1">' + cita.hora + '</div>' +
+        '</div>' +
+        '<div class="flex-grow-1">' +
+          '<div style="font-weight:700;font-size:14px;color:#222">' + cita.titulo + '</div>' +
+          '<div style="font-size:12px;color:#888;margin-top:2px">' + cita.tipo + ' &middot; ' + cita.duracion + ' min</div>' +
+          estudiante_html +
+        '</div>' +
+        '<div style="font-size:18px;color:#ccc">&#8250;</div>' +
+      '</div>';
+    item.onclick = function() {
+      var diaModalEl = document.getElementById('diaModal');
+      var inst = bootstrap.Modal.getInstance(diaModalEl);
+      if (inst) {
+        diaModalEl.addEventListener('hidden.bs.modal', function handler() {
+          diaModalEl.removeEventListener('hidden.bs.modal', handler);
+          abrirModalCitaData(cita);
+        });
+        inst.hide();
+      } else {
+        abrirModalCitaData(cita);
+      }
+    };
+    cuerpo.appendChild(item);
+  });
+
+  new bootstrap.Modal(document.getElementById('diaModal')).show();
+}
+
+function abrirModalCitaData(cita) {
+  document.getElementById('citaModalTitulo').textContent = cita.titulo;
+  document.getElementById('citaModalHeader').style.background = cita.color;
+  document.getElementById('citaModalTipo').textContent = cita.tipo || 'Sin tipo';
+  document.getElementById('citaModalFecha').textContent = cita.fecha;
+  document.getElementById('citaModalHora').textContent = cita.hora;
+  document.getElementById('citaModalEstudiante').textContent = cita.estudiante;
+  document.getElementById('citaModalDuracion').textContent = cita.duracion + ' minutos';
+  document.getElementById('citaModalObs').textContent = cita.observaciones;
+  document.getElementById('citaModalEditarBtn').href = '/calendario/cita/' + cita.id + '/editar/';
+  document.getElementById('citaModalEliminarBtn').href = '/calendario/cita/' + cita.id + '/eliminar/';
+  var historiaBtn = document.getElementById('citaModalHistoriaBtn');
+  if (cita.estudianteId && cita.estudianteId !== '') {
+    historiaBtn.href = '/estudiantes/' + cita.estudianteId + '/';
+    historiaBtn.style.display = 'inline-block';
+  } else {
+    historiaBtn.style.display = 'none';
+  }
+  new bootstrap.Modal(document.getElementById('citaModal')).show();
+}
+</script>
+{% endblock %}

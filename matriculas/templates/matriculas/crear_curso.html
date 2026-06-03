@@ -1,0 +1,51 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}{{ titulo }} — NeuroClick{% endblock %}
+{% block nav_bib %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a href="javascript:history.back()" class="btn btn-outline-neuro btn-sm">← Volver</a>
+      <h4 style="font-weight:900;margin:0">{{ titulo }}</h4>
+    </div>
+    <div class="nc-card p-4">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label fw-bold" style="font-size:13px;color:#555">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="text-danger" style="font-size:12px">{{ field.errors.0 }}</div>{% endif %}
+          </div>
+        {% endfor %}
+        <div class="d-flex gap-3 mt-4">
+          <button type="submit" class="btn btn-neuro px-5" style="padding:12px">
+            {% if editar %}Guardar Cambios{% else %}{{ titulo }}{% endif %}
+          </button>
+          <a href="javascript:history.back()" class="btn btn-outline-neuro px-4">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const urlInput = document.getElementById('id_url');
+const tituloInput = document.getElementById('id_titulo');
+if (urlInput && tituloInput) {
+  urlInput.addEventListener('blur', function() {
+    const url = this.value.trim();
+    if (!url || tituloInput.value.trim()) return;
+    const match = url.match(/(?:v=|youtu\.be\/|\/embed\/|\/shorts\/|\/live\/)([a-zA-Z0-9_-]{11})/);
+    if (!match) return;
+    fetch('https://noembed.com/embed?url=' + encodeURIComponent(url))
+      .then(r => r.json())
+      .then(data => { if (data.title) tituloInput.value = data.title; })
+      .catch(() => {});
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,222 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}Correo con IA — NeuroClick{% endblock %}
+{% block nav_correos %}active{% endblock %}
+
+{% block content %}
+<style>
+.ia-card { background:#fff; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,.07); padding:28px; }
+.ia-label { font-size:13px; font-weight:700; color:#555; margin-bottom:6px; }
+.ia-input, .ia-select, .ia-textarea { border-radius:12px; border:1.5px solid #e8e8e8; font-family:'Nunito'; width:100%; padding:10px 14px; font-size:14px; }
+.ia-input:focus, .ia-select:focus, .ia-textarea:focus { border-color:#8b2be2; outline:none; box-shadow:0 0 0 3px rgba(139,43,226,.12); }
+.ia-textarea { resize:vertical; min-height:80px; }
+.result-box { background:#f9f5ff; border:2px solid #e8d5ff; border-radius:14px; padding:20px; }
+.result-subject { font-size:15px; font-weight:800; color:#333; margin-bottom:8px; }
+.result-body { font-size:14px; color:#555; line-height:1.6; white-space:pre-wrap; }
+.spinner { display:none; width:20px; height:20px; border:3px solid #e8d5ff; border-top-color:#8b2be2; border-radius:50%; animation:spin .6s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <h3 style="font-weight:900;margin:0;font-size:26px">
+        ✉️ <span style="color:#8b2be2">Correo</span>
+        <span style="color:#000">con IA</span>
+      </h3>
+      <a href="{% url 'historial_correos' %}" class="btn btn-outline-neuro btn-sm ms-auto">📋 Historial</a>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="ia-card">
+          <h5 style="font-weight:800;margin-bottom:20px;font-size:16px">1. Datos del correo</h5>
+          <div class="mb-3" style="position:relative">
+            <label class="ia-label">Estudiante</label>
+            <input type="text" id="buscar_estudiante" class="ia-input" placeholder="Buscar por nombre..." autocomplete="off">
+            <input type="hidden" id="proceso_id" name="proceso_id">
+            <div id="resultados_estudiantes" style="display:none;position:absolute;z-index:10;background:#fff;border:1.5px solid #e8e8e8;border-radius:12px;max-height:200px;overflow-y:auto;width:100%;box-shadow:0 8px 24px rgba(0,0,0,.1)"></div>
+          </div>
+          <div class="mb-3">
+            <label class="ia-label">Correo del destinatario</label>
+            <input type="email" id="correo_destinatario" class="ia-input" placeholder="ejemplo@gmail.com">
+          </div>
+          <div class="mb-3">
+            <label class="ia-label">Motivo del correo</label>
+            <textarea id="motivo" class="ia-textarea" placeholder="Ej: Informar sobre el progreso del estudiante, citar a reunión..."></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="ia-label">Tono</label>
+            <select id="tono" class="ia-select">
+              <option value="formal">Formal y profesional</option>
+              <option value="calido" selected>Cálido y empático</option>
+              <option value="informativo">Informativo y claro</option>
+              <option value="urgente">Urgente pero respetuoso</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="ia-label">Información adicional (opcional)</label>
+            <textarea id="info_adicional" class="ia-textarea" placeholder="Cualquier detalle extra que quieras incluir..."></textarea>
+          </div>
+          <button id="btn_generar" class="btn btn-neuro w-100" style="padding:12px;border-radius:25px;font-weight:800">
+            <span id="btn_texto">🤖 Generar correo con IA</span>
+            <span class="spinner" id="spinner"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="ia-card">
+          <h5 style="font-weight:800;margin-bottom:20px;font-size:16px">2. Revisa y envía</h5>
+          <div id="resultado">
+            <p style="color:#bbb;text-align:center;padding:40px 0;font-size:14px">Genera un correo para verlo aquí</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrf = '{{ csrf_token }}';
+const puedeEnviar = {% if tiene_google %}true{% else %}false{% endif %};
+const buscarInput = document.getElementById('buscar_estudiante');
+const resultadosDiv = document.getElementById('resultados_estudiantes');
+const procesoId = document.getElementById('proceso_id');
+const correoDest = document.getElementById('correo_destinatario');
+const motivo = document.getElementById('motivo');
+const tono = document.getElementById('tono');
+const infoAdicional = document.getElementById('info_adicional');
+const btnGenerar = document.getElementById('btn_generar');
+const btnTexto = document.getElementById('btn_texto');
+const spinner = document.getElementById('spinner');
+const resultado = document.getElementById('resultado');
+
+let selectedStudent = null;
+let searchTimeout = null;
+
+buscarInput.addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const q = this.value.trim();
+  if (q.length < 2) { resultadosDiv.style.display = 'none'; return; }
+  searchTimeout = setTimeout(() => {
+    fetch('/correos/buscar-estudiante/?q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(data => {
+        resultadosDiv.innerHTML = '';
+        if (data.length === 0) {
+          resultadosDiv.innerHTML = '<div style="padding:10px 14px;color:#999;font-size:13px">Sin resultados</div>';
+        } else {
+          data.forEach(s => {
+            const div = document.createElement('div');
+            div.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f3f3f3';
+            div.innerHTML = '<strong>' + s.nombre_estudiante + '</strong> <span style="color:#999">· ' + s.grado + ' · ' + s.tipo_proceso + '</span>';
+            div.onmouseenter = () => div.style.background = '#f9f5ff';
+            div.onmouseleave = () => div.style.background = '';
+            div.onclick = () => {
+              selectedStudent = s;
+              buscarInput.value = s.nombre_estudiante + ' (' + s.grado + ')';
+              procesoId.value = s.id;
+              resultadosDiv.style.display = 'none';
+            };
+            resultadosDiv.appendChild(div);
+          });
+        }
+        resultadosDiv.style.display = 'block';
+      });
+  }, 300);
+});
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#buscar_estudiante') && !e.target.closest('#resultados_estudiantes')) {
+    resultadosDiv.style.display = 'none';
+  }
+});
+
+btnGenerar.addEventListener('click', function() {
+  if (!procesoId.value) { alert('Selecciona un estudiante'); return; }
+  if (!correoDest.value.trim()) { alert('Ingresa el correo del destinatario'); return; }
+  if (!motivo.value.trim()) { alert('Ingresa el motivo del correo'); return; }
+
+  btnTexto.textContent = 'Generando...';
+  spinner.style.display = 'inline-block';
+  btnGenerar.disabled = true;
+
+  const formData = new FormData();
+  formData.append('proceso_id', procesoId.value);
+  formData.append('correo_destinatario', correoDest.value.trim());
+  formData.append('motivo', motivo.value.trim());
+  formData.append('tono', tono.value);
+  formData.append('info_adicional', infoAdicional.value.trim());
+
+  fetch('/correos/generar/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrf },
+    body: formData,
+  })
+    .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+    .then(function(result) {
+      if (!result.ok) { alert(result.data.error); return; }
+      const data = result.data;
+      const btnEnviarHtml = puedeEnviar
+        ? '<button id="btn_enviar" class="btn btn-neuro w-100" style="padding:10px;border-radius:25px;font-weight:800">📤 Enviar por Gmail</button>'
+        : '<a href="/google/configuracion/" class="btn btn-outline-neuro w-100" style="padding:10px;border-radius:25px;font-weight:800">🔗 Conectar Google</a>';
+      resultado.innerHTML = `
+        <div class="result-box">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <span style="font-size:13px;font-weight:700;color:#8b2be2">✉️ Correo generado</span>
+            <span class="badge" style="background:#f3e8ff;color:#8b2be2;font-weight:700">${tono.options[tono.selectedIndex].text}</span>
+          </div>
+          <div class="result-subject">${data.subject}</div>
+          <div class="result-body">${data.body}</div>
+          <hr style="border-color:#e8d5ff;margin:16px 0">
+          ${btnEnviarHtml}
+          <p style="font-size:11px;color:#999;text-align:center;margin-top:6px">
+            Se enviará a: <strong>${correoDest.value.trim()}</strong>
+          </p>
+        </div>
+      `;
+      var envBtn = document.getElementById('btn_enviar');
+      if (envBtn) envBtn.addEventListener('click', enviarCorreo);
+    })
+    .catch(function(err) { alert('Error: ' + err.message); })
+    .finally(function() {
+      btnTexto.textContent = '🤖 Generar correo con IA';
+      spinner.style.display = 'none';
+      btnGenerar.disabled = false;
+    });
+});
+
+function enviarCorreo() {
+  var btn = document.getElementById('btn_enviar');
+  btn.textContent = 'Enviando...';
+  btn.disabled = true;
+
+  var formData = new FormData();
+  formData.append('proceso_id', procesoId.value);
+  var sbj = document.querySelector('.result-subject');
+  var bdy = document.querySelector('.result-body');
+  formData.append('subject', sbj ? sbj.textContent : '');
+  formData.append('body', bdy ? bdy.textContent : '');
+  formData.append('tono', tono.value);
+  formData.append('correo_destinatario', correoDest.value.trim());
+
+  fetch('/correos/enviar/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrf },
+    body: formData,
+  })
+    .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+    .then(function(result) {
+      alert(result.data.mensaje || result.data.error);
+      if (result.ok) window.location.reload();
+    })
+    .catch(function(err) {
+      alert('Error: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = '📤 Enviar por Gmail';
+    });
+}
+</script>
+{% endblock %}

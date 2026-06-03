@@ -1,0 +1,180 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}{{ titulo }} — NeuroClick{% endblock %}
+{% block nav_calendario %}active{% endblock %}
+
+{% block content %}
+<style>
+.tipocita-btn input:checked + span {
+    transform: scale(0.95);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+</style>
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a href="{% url 'calendario' %}" class="btn btn-outline-neuro btn-sm">← Volver</a>
+      <h4 style="font-weight:900;margin:0">{{ titulo }}</h4>
+    </div>
+    <div class="nc-card p-4">
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:13px;color:#555">Tipo de Reunión</label>
+          <div class="d-flex flex-wrap gap-2">
+            <label class="tipocita-btn" style="cursor:pointer">
+              <input type="radio" name="tipo_cita" value="Reunión talentos humanos" {% if form.instance.tipo_cita == 'Reunión talentos humanos' %}checked{% endif %} style="display:none">
+              <span class="d-inline-block px-3 py-2 rounded-pill" style="background:#d5f5e3;border:2px solid #27ae60;color:#27ae60;font-weight:700;font-size:13px">Reunión talentos humanos</span>
+            </label>
+            <label class="tipocita-btn" style="cursor:pointer">
+              <input type="radio" name="tipo_cita" value="Reunión rector" {% if form.instance.tipo_cita == 'Reunión rector' %}checked{% endif %} style="display:none">
+              <span class="d-inline-block px-3 py-2 rounded-pill" style="background:#fadbd8;border:2px solid #e74c3c;color:#e74c3c;font-weight:700;font-size:13px">Reunión rector</span>
+            </label>
+            <label class="tipocita-btn" style="cursor:pointer">
+              <input type="radio" name="tipo_cita" value="Reunión coordinador/a" {% if form.instance.tipo_cita == 'Reunión coordinador/a' %}checked{% endif %} style="display:none">
+              <span class="d-inline-block px-3 py-2 rounded-pill" style="background:#d6eaf8;border:2px solid #3498db;color:#3498db;font-weight:700;font-size:13px">Reunión coordinador/a</span>
+            </label>
+            <label class="tipocita-btn" style="cursor:pointer">
+              <input type="radio" name="tipo_cita" value="Reunión comité de convivencias" {% if form.instance.tipo_cita == 'Reunión comité de convivencias' %}checked{% endif %} style="display:none">
+              <span class="d-inline-block px-3 py-2 rounded-pill" style="background:#fcf3cf;border:2px solid #f1c40f;color:#f39c12;font-weight:700;font-size:13px">Reunión comité de convivencias</span>
+            </label>
+            <label class="tipocita-btn" style="cursor:pointer">
+              <input type="radio" name="tipo_cita" value="Cita padre de familia" {% if form.instance.tipo_cita == 'Cita padre de familia' %}checked{% endif %} style="display:none">
+              <span class="d-inline-block px-3 py-2 rounded-pill" style="background:#e8daef;border:2px solid #9b59b6;color:#9b59b6;font-weight:700;font-size:13px">Cita padre de familia</span>
+            </label>
+            <label class="tipocita-btn" style="cursor:pointer">
+              <input type="radio" name="tipo_cita" value="Cita estudiante" {% if form.instance.tipo_cita == 'Cita estudiante' %}checked{% endif %} style="display:none">
+              <span class="d-inline-block px-3 py-2 rounded-pill" style="background:#cbf9e2;border:2px solid #1abc9c;color:#16a085;font-weight:700;font-size:13px">Cita estudiante</span>
+            </label>
+            <label class="tipocita-btn" style="cursor:pointer">
+              <input type="radio" name="tipo_cita" value="Reunión otro psicólogo/a" {% if form.instance.tipo_cita == 'Reunión otro psicólogo/a' %}checked{% endif %} style="display:none">
+              <span class="d-inline-block px-3 py-2 rounded-pill" style="background:#ffddc1;border:2px solid #e67e22;color:#d35400;font-weight:700;font-size:13px">Reunión otro psicólogo/a</span>
+            </label>
+            <label class="tipocita-btn" style="cursor:pointer">
+              <input type="radio" name="tipo_cita" value="Reunión todos los profesores" {% if form.instance.tipo_cita == 'Reunión todos los profesores' %}checked{% endif %} style="display:none">
+              <span class="d-inline-block px-3 py-2 rounded-pill" style="background:#e2d9f3;border:2px solid #8e44ad;color:#7d3c98;font-weight:700;font-size:13px">Reunión todos los profesores</span>
+            </label>
+            <label class="tipocita-btn" style="cursor:pointer">
+              <input type="radio" name="tipo_cita" value="" {% if es_reunion_profesor %}checked{% endif %} style="display:none" id="profesor_radio">
+              <span class="d-inline-block px-3 py-2 rounded-pill" style="background:#e2d9f3;border:2px solid #8e44ad;color:#7d3c98;font-weight:700;font-size:13px" id="profesor_span" onclick="document.getElementById('profesor_select').style.display='block';this.style.display='none';document.getElementById('profesor_radio').checked=true;">
+                {% if es_reunion_profesor %}👨‍🏫 {{ profesor_seleccionado }}{% else %}Seleccionar profesor{% endif %}
+              </span>
+              <select id="profesor_select" class="form-control mt-1" style="display:none;font-size:12px" onchange="const nombre=this.value;document.getElementById('profesor_radio').value=nombre?'Reunión con '+nombre:'';document.getElementById('profesor_span').textContent=nombre?'👨‍🏫 '+nombre:'Seleccionar profesor';document.getElementById('profesor_span').style.display='inline-block';this.style.display='none';document.getElementById('profesor_radio').checked=!!nombre;">
+                <option value="">--- Elegir ---</option>
+                {% for prof in profesores %}
+                <option value="{{ prof.get_full_name|default:prof.username }}">{{ prof.get_full_name|default:prof.username }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="tipocita-btn" style="cursor:pointer">
+              <input type="radio" name="tipo_cita" value="" {% if not form.instance.tipo_cita %}checked{% endif %} style="display:none">
+              <span class="d-inline-block px-3 py-2 rounded-pill" style="background:#f5f5f5;border:2px solid #ccc;color:#666;font-weight:700;font-size:13px">Otro</span>
+            </label>
+          </div>
+        </div>
+        
+        
+        
+        <div class="mb-3" id="estudiante-div" style="display:none">
+          <label class="form-label fw-bold" style="font-size:13px;color:#555">Seleccionar estudiante</label>
+          <div class="d-flex gap-2">
+            <select name="estudiante" id="id_estudiante" class="form-control" onchange="actualizarBotonHistoria()">
+              <option value="">---------</option>
+              {% for est in estudiantes %}
+              <option value="{{ est.pk }}" {% if form.instance.estudiante_id == est.pk %}selected{% endif %}>
+                {{ est.nombre_estudiante }} ({{ est.grado }})
+              </option>
+              {% endfor %}
+            </select>
+            <a id="btn-ver-historia" href="#" class="btn btn-sm" style="background:#e8f5e9;border:1.5px solid #a5d6a7;color:#2e7d32;font-weight:700;white-space:nowrap;display:none">
+              📋 Ver historia
+            </a>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:13px;color:#555">Fecha y Hora</label>
+          <div class="d-flex gap-2">
+            {% if es_fecha_fija %}
+            <input type="text" value="{{ fecha_seleccionada }}" class="form-control" readonly style="background:#f5f5f5;cursor:not-allowed">
+            <input type="hidden" name="fecha" value="{{ fecha_seleccionada }}">
+            {% else %}
+            <input type="date" name="fecha" id="id_fecha" value="{{ fecha_seleccionada|default:form.instance.fecha_hora|date:'Y-m-d' }}" class="form-control" required>
+            {% endif %}
+            <input type="time" name="hora" id="id_hora" value="{{ form.instance.fecha_hora|date:'H:i'|default:'09:00' }}" class="form-control" required>
+          </div>
+        </div>
+        
+        <div class="d-flex gap-3 mt-4">
+          <button type="submit" class="btn btn-neuro px-5" style="padding:12px">
+            {% if editar %}Guardar Cambios{% else %}Agendar Cita{% endif %}
+          </button>
+          <a href="{% url 'calendario' %}" class="btn btn-outline-neuro px-4">Cancelar</a>
+          {% if editar %}
+          <button type="button" class="btn btn-danger ms-auto" data-bs-toggle="modal" data-bs-target="#eliminarModal" style="background:#e74c3c;color:#fff;border:none">Eliminar Cita</button>
+          {% endif %}
+        </div>
+      </form>
+      {% if editar %}
+      <div class="modal fade" id="eliminarModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Confirmar eliminación</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <p>¿Estás seguro de que deseas eliminar esta cita?</p>
+              <p class="text-muted">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+              <form method="post" action="{% url 'eliminar_cita' form.instance.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" style="background:#e74c3c;border:none">Sí, eliminar</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radios = document.querySelectorAll('input[name="tipo_cita"]');
+    const estudianteDiv = document.getElementById('estudiante-div');
+    const estudianteSelect = document.getElementById('id_estudiante');
+    
+    function checkTipo() {
+        const selected = document.querySelector('input[name="tipo_cita"]:checked');
+        
+        if (selected && (selected.value === 'Cita padre de familia' || selected.value === 'Cita estudiante')) {
+            estudianteDiv.style.display = 'block';
+            estudianteSelect.setAttribute('required', 'required');
+        } else {
+            estudianteDiv.style.display = 'none';
+            estudianteSelect.removeAttribute('required');
+            estudianteSelect.value = '';
+        }
+    }
+    
+    radios.forEach(r => r.addEventListener('change', checkTipo));
+    checkTipo();
+    actualizarBotonHistoria();
+});
+
+function actualizarBotonHistoria() {
+    var select = document.getElementById('id_estudiante');
+    var btn = document.getElementById('btn-ver-historia');
+    if (select && btn && select.value) {
+        btn.href = '/estudiantes/' + select.value + '/';
+        btn.style.display = 'inline-block';
+    } else if (btn) {
+        btn.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

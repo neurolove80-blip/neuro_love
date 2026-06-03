@@ -1,0 +1,243 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}{{ tema.titulo }} — NeuroClick{% endblock %}
+{% block nav_foro %}active{% endblock %}
+
+{% block content %}
+<style>
+.foro-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.header {
+    margin-bottom: 24px;
+}
+
+.btn-volver {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #666;
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+.btn-volver:hover {
+    color: #8b2be2;
+}
+
+.tema-box {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border-left: 5px solid #8b2be2;
+}
+.tema-box h2 {
+    color: #1a1a2e;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+.tema-meta {
+    color: #888;
+    font-size: 13px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+}
+.tema-contenido {
+    color: #444;
+    line-height: 1.7;
+    font-size: 15px;
+}
+
+.mensajes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.mensaje {
+    display: flex;
+    gap: 12px;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.avatar.psicologo {
+    background: #8b2be2;
+}
+.avatar.profesor {
+    background: #ff9800;
+}
+
+.mensaje-box {
+    flex: 1;
+    background: white;
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border-left: 4px solid #ddd;
+}
+.mensaje-box.psicologo {
+    border-left-color: #8b2be2;
+    background: linear-gradient(135deg, rgba(139,43,226,0.04), white);
+}
+.mensaje-box.profesor {
+    border-left-color: #ff9800;
+    background: linear-gradient(135deg, rgba(255,152,0,0.04), white);
+}
+
+.mensaje-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.mensaje-nombre {
+    font-weight: 700;
+    color: #333;
+    font-size: 14px;
+}
+.mensaje-rol {
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+}
+.mensaje-rol.psicologo {
+    background: #8b2be2;
+}
+.mensaje-rol.profesor {
+    background: #ff9800;
+}
+.mensaje-fecha {
+    color: #999;
+    font-size: 12px;
+    margin-left: auto;
+}
+
+.mensaje-texto {
+    color: #444;
+    line-height: 1.6;
+    font-size: 14px;
+    margin: 0;
+}
+
+.sin-mensajes {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-style: italic;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.formulario-respuesta {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    border: 2px solid rgba(139,43,226,0.15);
+}
+.formulario-respuesta h6 {
+    color: #8b2be2;
+    font-weight: 700;
+    margin-bottom: 16px;
+    font-size: 15px;
+}
+.formulario-respuesta textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    resize: vertical;
+    min-height: 100px;
+    font-size: 14px;
+    font-family: inherit;
+}
+.formulario-respuesta textarea:focus {
+    outline: none;
+    border-color: #8b2be2;
+    box-shadow: 0 0 0 3px rgba(139,43,226,0.1);
+}
+</style>
+
+<div class="foro-container">
+    <div class="header">
+        <a href="{% url 'lista_foro' %}" class="btn-volver">
+            ← Volver al foro
+        </a>
+        
+        <div class="tema-box">
+            <h2>{{ tema.titulo }}</h2>
+            <div class="tema-meta">
+                {% if es_admin %}
+                    Conversación con <strong>{{ conversacion.profesor.get_full_name|default:conversacion.profesor.username }}</strong>
+                {% else %}
+                    Pregunta del Psicólogo
+                {% endif %}
+                · {{ tema.fecha|date:"d/m/Y" }}
+                <span style="margin-left:12px;padding:2px 10px;background:rgba(139,43,226,0.1);border-radius:12px;font-size:11px;color:#8b2be2">{{ tema.get_categoria_display }}</span>
+            </div>
+            <div class="tema-contenido">
+                {{ tema.descripcion|linebreaks }}
+            </div>
+        </div>
+    </div>
+
+    <div class="mensajes-container">
+        {% if mensajes %}
+            {% for msg in mensajes %}
+            <div class="mensaje">
+                <div class="avatar {% if msg.autor.perfil.es_psicologo %}psicologo{% else %}profesor{% endif %}">
+                    {{ msg.autor.first_name|slice:":1"|default:msg.autor.username|slice:":1"|upper }}
+                </div>
+                <div class="mensaje-box {% if msg.autor.perfil.es_psicologo %}psicologo{% else %}profesor{% endif %}">
+                    <div class="mensaje-header">
+                        <span class="mensaje-nombre">{{ msg.autor.get_full_name|default:msg.autor.username }}</span>
+                        <span class="mensaje-rol {% if msg.autor.perfil.es_psicologo %}psicologo{% else %}profesor{% endif %}">
+                            {{ msg.autor.perfil.get_rol_display }}
+                        </span>
+                        <span class="mensaje-fecha">{{ msg.fecha|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    <p class="mensaje-texto">{{ msg.texto|linebreaks }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="sin-mensajes">
+                No hay mensajes todavía. ¡Inicia la conversación!
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="formulario-respuesta">
+        <h6>✍️ Responder</h6>
+        <form method="post">
+            {% csrf_token %}
+            <textarea name="texto" placeholder="Escribe tu mensaje...">{{ form.texto.value|default:'' }}</textarea>
+            {% if form.texto.errors %}
+                <div style="color:#e74c3c;font-size:12px;margin-top:4px">{{ form.texto.errors.0 }}</div>
+            {% endif %}
+            <div style="margin-top:12px">
+                <button type="submit" class="btn btn-neuro" style="padding:12px 28px;font-weight:700">Enviar mensaje</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

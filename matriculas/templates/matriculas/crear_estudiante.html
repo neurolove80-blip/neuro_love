@@ -1,0 +1,55 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}{{ titulo }} — NeuroClick{% endblock %}
+{% block nav_est %}active{% endblock %}
+
+{% block content %}
+<style>
+.crear-card { max-width:800px; margin:0 auto; }
+.crear-card .form-label { font-size:13px; font-weight:700; color:#555; }
+.crear-card input, .crear-card select, .crear-card textarea {
+  font-size:14px; border-radius:10px; border:1.5px solid #e0d0f0; padding:10px 14px;
+  width:100%; transition:border-color .25s;
+}
+.crear-card input:focus, .crear-card select:focus, .crear-card textarea:focus {
+  border-color:#8b2be2; outline:none; box-shadow:0 0 0 3px rgba(139,43,226,.08);
+}
+.crear-card textarea { min-height:100px; resize:vertical; }
+</style>
+
+<div class="row justify-content-center">
+  <div class="col-md-9">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a href="javascript:history.back()" class="btn btn-outline-neuro btn-sm">← Volver</a>
+      <h4 style="font-weight:900;margin:0">{{ titulo }}</h4>
+    </div>
+    <div class="nc-card p-4 crear-card">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          {% for field in form %}
+            {% if field.name == 'descripcion' %}
+              </div><div class="mb-3">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="text-danger" style="font-size:12px">{{ field.errors.0 }}</div>{% endif %}
+              </div><div class="row g-3">
+            {% else %}
+              <div class="col-md-6">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="text-danger" style="font-size:12px">{{ field.errors.0 }}</div>{% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <div class="d-flex gap-3 mt-4">
+          <button type="submit" class="btn btn-neuro px-5" style="padding:12px">
+            {% if editar %}Guardar Cambios{% else %}{{ titulo }}{% endif %}
+          </button>
+          <a href="javascript:history.back()" class="btn btn-outline-neuro px-4">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

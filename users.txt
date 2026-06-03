@@ -1,0 +1,19 @@
+====================================
+  NEUROCLICK - USUARIOS DE PRUEBA
+====================================
+
+ROL: PSICOLOGO (acceso completo)
+  Usuario  : Guadalupe
+  Contrasena: neuro123
+
+ROL: PROFESOR
+  Usuario  : carlos
+  Contrasena: neuro123
+
+  Usuario  : ana
+  Contrasena: neuro123
+
+
+ROL: ADMIN
+ Usuario : neuro_admin
+ Contrasena : neuro123

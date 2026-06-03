@@ -1,0 +1,24 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}Eliminar {{ tipo|title }} — NeuroClick{% endblock %}
+{% block nav_est %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="nc-card p-5 text-center">
+      <h4 style="font-weight:900;color:#e74c3c;margin-bottom:12px">¿Eliminar este {{ tipo }}?</h4>
+      <p style="color:#666;font-size:14px;margin-bottom:24px">
+        ¿Estás seguro de que deseas eliminar <strong>{{ objeto }}</strong>?<br>
+        Esta acción no se puede deshacer.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <div class="d-flex gap-3 justify-content-center">
+          <button type="submit" class="btn" style="background:#e74c3c;color:#fff;border:none;border-radius:25px;font-weight:700;padding:10px 30px">Sí, eliminar</button>
+          <a href="javascript:history.back()" class="btn btn-outline-neuro px-4">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

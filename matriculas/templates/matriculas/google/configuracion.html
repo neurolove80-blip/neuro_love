@@ -1,0 +1,18 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}Configuración Google — NeuroClick{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="nc-card p-4 text-center">
+      <h4 style="font-weight:900;margin-bottom:16px">🔗 Conexión Google</h4>
+      {% if tiene_credenciales %}
+        <p style="color:#2ecc71;font-weight:700;font-size:16px">✅ Conectado a Google</p>
+      {% else %}
+        <p style="color:#666;font-size:14px;margin-bottom:20px">Conecta tu cuenta de Google para sincronizar correos y calendario.</p>
+        <a href="{% url 'google_auth' %}" class="btn btn-neuro px-5">Conectar con Google</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

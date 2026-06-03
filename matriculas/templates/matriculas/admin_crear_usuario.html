@@ -1,0 +1,145 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}{{ titulo }} — NeuroClick{% endblock %}
+{% block nav_admin %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+
+    <!-- BREADCRUMB -->
+    <div class="mb-3" style="font-size:13px;color:#888">
+      <a href="{% url 'admin_dashboard' %}" style="color:#8b2be2;font-weight:600">Panel Admin</a>
+      <span class="mx-1">›</span>
+      <a href="{% url 'admin_usuarios' %}" style="color:#8b2be2;font-weight:600">Usuarios</a>
+      <span class="mx-1">›</span>
+      <span>{{ titulo }}</span>
+    </div>
+
+    <div class="nc-card">
+      <div class="panel-header" style="border-radius:16px 16px 0 0">
+        <h5>{% if editar %}✏️{% else %}👤{% endif %} {{ titulo }}</h5>
+      </div>
+
+      <div class="p-4">
+        {% if editar and usuario %}
+        <div class="mb-4 p-3" style="background:#f8f0ff;border-radius:12px;border:1.5px solid #e8d5ff">
+          <div style="font-size:13px;font-weight:700;color:#8b2be2">Editando usuario</div>
+          <div style="font-weight:800;font-size:16px">{{ usuario.get_full_name|default:usuario.username }}</div>
+          <div style="font-size:12px;color:#888">Registrado desde {{ usuario.date_joined|date:"d/m/Y" }}</div>
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger rounded-3">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Nombre Completo -->
+          <div class="mb-3">
+            <label class="form-label fw-700" style="font-weight:700;font-size:14px">{{ form.first_name.label }}</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+            <div class="text-danger mt-1" style="font-size:13px">{{ form.first_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Email -->
+          <div class="mb-3">
+            <label class="form-label fw-700" style="font-weight:700;font-size:14px">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+            <div class="text-danger mt-1" style="font-size:13px">{{ form.email.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Username -->
+          <div class="mb-3">
+            <label class="form-label fw-700" style="font-weight:700;font-size:14px">{{ form.username.label }}</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+            <div class="text-danger mt-1" style="font-size:13px">{{ form.username.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          {% if not editar %}
+          <!-- Password 1 -->
+          <div class="mb-3">
+            <label class="form-label fw-700" style="font-weight:700;font-size:14px">{{ form.password1.label }}</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+            <div class="text-danger mt-1" style="font-size:13px">{{ form.password1.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Password 2 -->
+          <div class="mb-3">
+            <label class="form-label fw-700" style="font-weight:700;font-size:14px">{{ form.password2.label }}</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+            <div class="text-danger mt-1" style="font-size:13px">{{ form.password2.errors.0 }}</div>
+            {% endif %}
+          </div>
+          {% else %}
+          <!-- Cambiar contraseña (edición) -->
+          <div class="mb-1 mt-2" style="font-size:13px;font-weight:700;color:#8b2be2;letter-spacing:.3px">🔒 Cambiar Contraseña</div>
+          <div class="mb-3 p-3" style="background:#f9f5ff;border-radius:12px;border:1.5px solid #e8d5ff">
+            <div style="font-size:12px;color:#888;margin-bottom:10px">Deja los campos vacíos para mantener la contraseña actual.</div>
+            <div class="mb-3">
+              <label class="form-label fw-700" style="font-weight:700;font-size:14px">{{ form.nueva_password.label }}</label>
+              {{ form.nueva_password }}
+              {% if form.nueva_password.errors %}
+              <div class="text-danger mt-1" style="font-size:13px">{{ form.nueva_password.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-1">
+              <label class="form-label fw-700" style="font-weight:700;font-size:14px">{{ form.confirmar_password.label }}</label>
+              {{ form.confirmar_password }}
+              {% if form.confirmar_password.errors %}
+              <div class="text-danger mt-1" style="font-size:13px">{{ form.confirmar_password.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Rol -->
+          <div class="mb-3">
+            <label class="form-label fw-700" style="font-weight:700;font-size:14px">{{ form.rol.label }}</label>
+            {{ form.rol }}
+            {% if form.rol.errors %}
+            <div class="text-danger mt-1" style="font-size:13px">{{ form.rol.errors.0 }}</div>
+            {% endif %}
+            <div style="font-size:12px;color:#888;margin-top:4px">
+              <strong>Psicólogo:</strong> gestión de procesos, biblioteca, foro y calendario.
+              <strong>Profesor:</strong> lectura y participación en foro.
+              <strong>Administrador:</strong> gestión completa del sistema y usuarios.
+            </div>
+          </div>
+
+          <!-- Activo -->
+          <div class="mb-4">
+            <div class="form-check">
+              {{ form.is_active }}
+              <label class="form-check-label fw-700" style="font-weight:700;font-size:14px">{{ form.is_active.label }}</label>
+            </div>
+            {% if form.is_active.errors %}
+            <div class="text-danger mt-1" style="font-size:13px">{{ form.is_active.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-neuro flex-fill" style="padding:12px">
+              {% if editar %}Guardar Cambios{% else %}Crear Usuario{% endif %}
+            </button>
+            <a href="{% url 'admin_usuarios' %}" class="btn btn-outline-neuro" style="padding:12px 24px">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

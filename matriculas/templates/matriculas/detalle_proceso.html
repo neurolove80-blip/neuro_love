@@ -1,0 +1,315 @@
+{% extends 'matriculas/base.html' %}
+{% block title %}{{ proceso.nombre_estudiante }} — NeuroClick{% endblock %}
+{% block nav_est %}active{% endblock %}
+
+{% block content %}
+<style>
+.entry-box { background: #f9f5ff; border: 2px solid #e8d5ff; border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; }
+.entry-header { font-size: 12px; color: #5b8dee; font-weight: 700; margin-bottom: 6px; }
+.entry-content { font-size: 14px; color: #1a1a2e; line-height: 1.6; white-space: pre-wrap; }
+.consejo-box { background: #fff8e1; border: 2px solid #ffd54f; border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; }
+.consejo-autor { font-size: 11px; color: #e65100; font-weight: 700; margin-top: 6px; }
+.empty-state { text-align: center; padding: 30px; color: #aaa; font-style: italic; }
+</style>
+
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{% url 'lista_procesos' %}" class="btn btn-outline-neuro btn-sm">← Volver</a>
+  <h4 style="font-weight:900;margin:0">{{ proceso.nombre_estudiante }}</h4>
+  {% if proceso.estado == 'activo' %}<span class="badge-activo">Activo</span>
+  {% elif proceso.estado == 'en_curso' %}<span class="badge-encurso">En Curso</span>
+  {% else %}<span class="badge-final">Finalizado</span>{% endif %}
+</div>
+
+<!-- Info del estudiante -->
+<div class="nc-card p-4 mb-4">
+  <div class="row g-3">
+    <div class="col-md-3"><strong style="color:#666;font-size:12px">IDENTIFICACIÓN</strong><br>{{ proceso.tipo_identificacion }} {{ proceso.numero_identificacion }}</div>
+    <div class="col-md-3"><strong style="color:#666;font-size:12px">GRADO</strong><br>{{ proceso.grado }}</div>
+    <div class="col-md-3"><strong style="color:#666;font-size:12px">TIPO DE PROCESO</strong><br>{{ proceso.get_tipo_proceso_display }}</div>
+    <div class="col-md-3"><strong style="color:#666;font-size:12px">FECHA DE INICIO</strong><br>{{ proceso.fecha_inicio|date:"d/m/Y" }}</div>
+  </div>
+  {% if proceso.descripcion %}
+  <hr class="my-3">
+  <div><strong style="color:#666;font-size:12px">DESCRIPCIÓN</strong><br>{{ proceso.descripcion }}</div>
+  {% endif %}
+</div>
+
+{% if es_admin %}
+<!-- ========== PSICÓLOGO / ADMIN ========== -->
+
+<!-- Acciones PDF -->
+<div class="d-flex gap-2 flex-wrap mb-3">
+  <a href="{% url 'descargar_historia_pdf' proceso.pk %}" class="btn btn-neuro btn-sm" target="_blank">📄 Descargar Historia Clínica (PDF)</a>
+  <a href="{% url 'descargar_ajustes_pdf' proceso.pk %}" class="btn btn-sm" style="background:#fff8e1;border:1.5px solid #ffd54f;color:#e65100;border-radius:20px;font-weight:700;font-size:13px" target="_blank">💡 Descargar Ajustes Razonables (PDF)</a>
+  <button id="btn-analizar-ia" type="button" class="btn btn-sm" style="background:#e8f0ff;border:1.5px solid #b3c9ff;color:#5b8dee;border-radius:20px;font-weight:700;font-size:13px" onclick="analizarIA({{ proceso.pk }})">🤖 Analizar con IA</button>
+</div>
+
+<!-- Panel resultado IA -->
+<div id="panel-ia" style="display:none" class="nc-card p-4 mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 style="font-weight:800;color:#8b2be2;margin:0">🤖 Análisis Generado por IA</h5>
+    <div class="d-flex gap-2">
+      <button onclick="descargarAnalisisPDF({{ proceso.pk }})" class="btn btn-sm" style="background:#f3e8ff;border:1.5px solid #d8b4fe;color:#8b2be2;border-radius:20px;font-weight:700;font-size:13px">📄 Descargar PDF</button>
+      <button onclick="cerrarPanelIA()" class="btn btn-sm" style="background:#f5f5f5;border:1.5px solid #ddd;color:#666;border-radius:20px;font-weight:700;font-size:13px">✕ Cerrar</button>
+    </div>
+  </div>
+  <hr>
+  <div id="contenido-ia"></div>
+</div>
+
+<div class="row">
+  <!-- Historia Clínica -->
+  <div class="col-md-7 mb-4">
+    <div class="nc-card p-4">
+      <h5 style="font-weight:800;color:#8b2be2">📋 Historia Clínica</h5>
+      <hr>
+
+      {% if form_hist %}
+      <form method="post" class="mb-4">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:13px;color:#555">Nueva Entrada</label>
+          <textarea name="contenido" class="form-control" rows="4" placeholder="Escribe una entrada en la historia clínica..." required>{{ form_hist.contenido.value|default:'' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-neuro btn-sm">Guardar Entrada</button>
+      </form>
+      {% endif %}
+
+      {% if historia %}
+        {% for h in historia %}
+        <div class="entry-box">
+          <div class="entry-header">#{{ forloop.revcounter }} · {{ h.fecha|date:"d/m/Y H:i" }} — {{ h.autor.get_full_name|default:"Psicólogo" }}</div>
+          <div class="entry-content">{{ h.contenido }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">No hay entradas en la historia clínica.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Ajustes Razonables -->
+  <div class="col-md-5 mb-4">
+    <div class="nc-card p-4">
+      <h5 style="font-weight:800;color:#e65100">💡 Ajustes Razonables</h5>
+      <hr>
+
+      {% if consejos %}
+        {% for c in consejos %}
+        <div class="consejo-box">
+          <div style="font-size:14px;color:#1a1a2e;line-height:1.6">{{ c.texto }}</div>
+          <div class="consejo-autor">— {{ c.autor.get_full_name|default:c.autor.username }} · {{ c.fecha|date:"d/m/Y H:i" }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">Aún no hay ajustes razonables registrados.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% else %}
+<!-- ========== PROFESOR ========== -->
+
+<div class="row">
+  <div class="col-md-6 mb-4">
+    <div class="nc-card p-4">
+      <h5 style="font-weight:800;color:#e65100">💡 Ajuste Razonable</h5>
+      <hr>
+      {% if form %}
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-bold" style="font-size:13px;color:#555">Tu sugerencia</label>
+          <textarea name="texto" class="form-control" rows="4" placeholder="Describe el ajuste razonable que sugieres para este estudiante..." required>{{ form.texto.value|default:'' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-neuro btn-sm">Enviar Ajuste Razonable</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-md-6 mb-4">
+    <div class="nc-card p-4">
+      <h5 style="font-weight:800;color:#8b2be2">💡 Mis Ajustes Enviados</h5>
+      <hr>
+      <div class="d-flex gap-2 mb-3">
+        <a href="{% url 'descargar_ajustes_pdf' proceso.pk %}" class="btn btn-sm" style="background:#fff8e1;border:1.5px solid #ffd54f;color:#e65100;border-radius:20px;font-weight:700;font-size:13px" target="_blank">📄 Descargar Ajustes (PDF)</a>
+      </div>
+      {% if consejos %}
+        {% for c in consejos %}
+        <div class="consejo-box">
+          <div style="font-size:14px;color:#1a1a2e;line-height:1.6">{{ c.texto }}</div>
+          <div class="consejo-autor">— {{ c.autor.get_full_name|default:c.autor.username }} · {{ c.fecha|date:"d/m/Y H:i" }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">No has enviado ajustes razonables aún.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<style>
+#contenido-ia { font-size: 14px; color: #1a1a2e; line-height: 1.8; }
+#contenido-ia h1 { font-size: 16px; font-weight: 800; color: #8b2be2; margin: 20px 0 8px; }
+#contenido-ia h2 { font-size: 15px; font-weight: 800; color: #8b2be2; margin: 18px 0 8px; }
+#contenido-ia h3 { font-size: 14px; font-weight: 700; color: #5b8dee; margin: 14px 0 6px; }
+#contenido-ia .ia-seccion {
+  background: #f9f5ff;
+  border-left: 4px solid #8b2be2;
+  border-radius: 0 10px 10px 0;
+  padding: 12px 16px;
+  margin: 14px 0;
+}
+#contenido-ia .ia-seccion-titulo {
+  font-size: 13px; font-weight: 800; color: #8b2be2;
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+}
+#contenido-ia ul { padding-left: 20px; margin: 6px 0; }
+#contenido-ia li { margin-bottom: 5px; }
+#contenido-ia strong { color: #1a1a2e; font-weight: 700; }
+#contenido-ia .ia-separador { border: none; border-top: 1.5px solid #e8d5ff; margin: 16px 0; }
+#contenido-ia p { margin: 6px 0; }
+</style>
+<script>
+let ultimoAnalisis = '';
+
+function renderMarkdown(texto) {
+  const colores = {
+    1: { bg: '#f0f4ff', border: '#5b8dee' },
+    2: { bg: '#f9f5ff', border: '#8b2be2' },
+    3: { bg: '#f0fdf4', border: '#16a34a' },
+    4: { bg: '#fff5f5', border: '#dc2626' },
+  };
+
+  // Dividir el texto en líneas y procesar bloque a bloque
+  const lineas = texto.split('\n');
+  let html = '';
+  let enSeccion = false;
+  let bufferSeccion = [];
+  let colorActual = null;
+
+  function vaciarSeccion() {
+    if (!enSeccion) return;
+    html += renderLineas(bufferSeccion, colorActual) + '</div>';
+    bufferSeccion = [];
+    enSeccion = false;
+    colorActual = null;
+  }
+
+  const regexSeccion = /^\s*(?:\*\*)?(\d+)\.\s*(?:\*\*)?\s*\*{0,2}(.+?)\*{0,2}\s*$/;
+
+  for (const linea of lineas) {
+    const mSeccion = linea.match(regexSeccion);
+    const numSeccion = mSeccion ? parseInt(mSeccion[1]) : null;
+    const esTituloSeccion = numSeccion && colores[numSeccion];
+
+    if (esTituloSeccion) {
+      vaciarSeccion();
+      const c = colores[numSeccion];
+      const titulo = mSeccion[2].replace(/\*\*/g, '').trim();
+      html += `<div class="ia-seccion" style="background:${c.bg};border-left-color:${c.border}">` +
+              `<div class="ia-seccion-titulo" style="color:${c.border}">${numSeccion}. ${titulo}</div>`;
+      enSeccion = true;
+      colorActual = c;
+    } else if (enSeccion) {
+      bufferSeccion.push(linea);
+    } else {
+      html += renderLinea(linea);
+    }
+  }
+  vaciarSeccion();
+  return html;
+}
+
+function renderLineas(lineas, color) {
+  let html = '';
+  let enLista = false;
+
+  for (const linea of lineas) {
+    const esItem = /^[•\-\*]\s+(.+)$/.test(linea);
+    if (esItem) {
+      if (!enLista) { html += '<ul>'; enLista = true; }
+      html += '<li>' + formatInline(linea.replace(/^[•\-\*]\s+/, '')) + '</li>';
+    } else {
+      if (enLista) { html += '</ul>'; enLista = false; }
+      html += renderLinea(linea);
+    }
+  }
+  if (enLista) html += '</ul>';
+  return html;
+}
+
+function renderLinea(linea) {
+  if (/^---+$/.test(linea.trim())) return '<hr class="ia-separador">';
+  if (/^#{1,2}\s/.test(linea)) return '<h2>' + formatInline(linea.replace(/^#{1,2}\s+/, '')) + '</h2>';
+  if (/^#{3}\s/.test(linea)) return '<h3>' + formatInline(linea.replace(/^#{3}\s+/, '')) + '</h3>';
+  if (/^[•\-\*]\s+/.test(linea)) return '<ul><li>' + formatInline(linea.replace(/^[•\-\*]\s+/, '')) + '</li></ul>';
+  if (linea.trim() === '') return '';
+  return '<p>' + formatInline(linea) + '</p>';
+}
+
+function formatInline(texto) {
+  return texto.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
+function analizarIA(pk) {
+  const btn = document.getElementById('btn-analizar-ia');
+  btn.disabled = true;
+  btn.textContent = '⏳ Analizando...';
+
+  fetch(`/estudiantes/${pk}/analizar/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+  })
+  .then(r => r.json())
+  .then(data => {
+    btn.disabled = false;
+    btn.textContent = '🤖 Analizar con IA';
+    if (data.analisis) {
+      ultimoAnalisis = data.analisis;
+      document.getElementById('contenido-ia').innerHTML = renderMarkdown(data.analisis);
+      const panel = document.getElementById('panel-ia');
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      alert('Error al analizar: ' + (data.error || 'Error desconocido'));
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.textContent = '🤖 Analizar con IA';
+    alert('Error de red: ' + err);
+  });
+}
+
+function descargarAnalisisPDF(pk) {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = `/estudiantes/${pk}/analizar-pdf/`;
+  const csrf = document.createElement('input');
+  csrf.type = 'hidden';
+  csrf.name = 'csrfmiddlewaretoken';
+  csrf.value = '{{ csrf_token }}';
+  form.appendChild(csrf);
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = 'analisis';
+  input.value = ultimoAnalisis;
+  form.appendChild(input);
+  document.body.appendChild(form);
+  form.submit();
+  document.body.removeChild(form);
+}
+
+function cerrarPanelIA() {
+  document.getElementById('panel-ia').style.display = 'none';
+  ultimoAnalisis = '';
+}
+</script>
+{% endblock %}
