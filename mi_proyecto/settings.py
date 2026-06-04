@@ -1,7 +1,7 @@
 import os
+import dj_database_url
 from pathlib import Path
 
-# Carga variables de entorno desde .env si existe
 try:
     from dotenv import load_dotenv
     load_dotenv(Path(__file__).resolve().parent.parent / '.env')
@@ -10,17 +10,20 @@ except ImportError:
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-neuroclick-2025-cambiar-en-produccion'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-neuroclick-2025-cambiar-en-produccion')
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
+RAILWAY_URL = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '')
 CSRF_TRUSTED_ORIGINS = [
     'https://subject-manhood-briskly.ngrok-free.dev',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
+if RAILWAY_URL:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RAILWAY_URL}')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -34,6 +37,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,12 +67,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'mi_proyecto.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -83,6 +93,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -99,4 +111,3 @@ ANTHROPIC_API_KEY    = os.environ.get('ANTHROPIC_API_KEY', '')
 GOOGLE_CLIENT_ID     = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 GOOGLE_REDIRECT_URI  = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost:8000/google/callback/')
-
