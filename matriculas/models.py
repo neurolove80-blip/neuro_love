@@ -1,6 +1,22 @@
+import os
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
+
+
+def archivo_libro_storage():
+    """Storage para el PDF de los libros.
+
+    En Cloudinary los PDFs deben guardarse como 'raw' (no 'image'); de lo
+    contrario la URL apunta a /image/upload/ y la entrega del PDF falla.
+    En entornos sin Cloudinary se usa el almacenamiento por defecto (local).
+    """
+    if os.environ.get('CLOUDINARY_CLOUD_NAME'):
+        from cloudinary_storage.storage import RawMediaCloudinaryStorage
+        return RawMediaCloudinaryStorage()
+    from django.core.files.storage import default_storage
+    return default_storage
 
 
 class PerfilUsuario(models.Model):
@@ -124,7 +140,7 @@ class Libro(models.Model):
     categoria  = models.CharField(max_length=20, choices=CATEGORIA_CHOICES, verbose_name='Categoría')
     descripcion = models.TextField(verbose_name='Descripción')
     fecha_publicacion = models.DateField(verbose_name='Fecha de Publicación')
-    archivo    = models.FileField(upload_to='libros/', blank=True, null=True, verbose_name='Archivo PDF')
+    archivo    = models.FileField(upload_to='libros/', storage=archivo_libro_storage, blank=True, null=True, verbose_name='Archivo PDF')
     imagen_portada = models.ImageField(upload_to='libros/covers/', blank=True, null=True, verbose_name='Imagen de portada')
     color_portada = models.CharField(max_length=7, default='#8b2be2', verbose_name='Color de portada (si no hay imagen)')
     agregado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='libros_agregados')
