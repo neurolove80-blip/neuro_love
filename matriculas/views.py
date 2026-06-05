@@ -587,7 +587,20 @@ def descargar_libro(request, pk):
     from django.http import FileResponse, HttpResponse
     libro = get_object_or_404(Libro, pk=pk)
     if libro.archivo:
-        return FileResponse(libro.archivo.open('rb'), as_attachment=True)
+        try:
+            url = libro.archivo.url
+        except Exception:
+            url = ''
+        # Almacenamiento en la nube (Cloudinary en Railway): redirigir a la URL
+        # del archivo y forzar la descarga con la transformación fl_attachment.
+        # Abrir el archivo en el servidor (.open) falla con Cloudinary -> error 500.
+        if 'res.cloudinary.com' in url:
+            if '/upload/' in url and 'fl_attachment' not in url:
+                url = url.replace('/upload/', '/upload/fl_attachment/', 1)
+            return redirect(url)
+        # Almacenamiento local (desarrollo): servir el archivo directamente.
+        if url:
+            return FileResponse(libro.archivo.open('rb'), as_attachment=True)
     # Si no hay archivo, devolver un .txt con info del libro
     contenido = (
         f"TÍTULO: {libro.titulo}\n"
